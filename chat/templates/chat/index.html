@@ -1,0 +1,37 @@
+<html>
+<head>
+</head>
+<body>
+    <div id='messages' class='messafges'>
+    </div>
+    <form id='form' action=''>
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input id='send' type='submit' value='send' />
+    </form>
+</body>
+<script>
+    const form = document.getElementById('form');
+    const messages = document.getElementById('messages');
+    const host = window.location.host;
+    const path = window.location.pathname;
+    const websocket = new WebSocket("ws://"+host+path);
+    console.log(websocket);
+    websocket.onopen = function(evt) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const message = document.getElementById('id_message').value;
+            const data = {
+                message: message
+            };
+            websocket.send(JSON.stringify(data));
+        });
+    };
+    websocket.onclose = function(evt) {};
+    websocket.onmessage = function(evt) {
+        data = JSON.parse(evt.data);
+        messages.innerHTML += '<div class="message">'+data.message+'</div>';
+    };
+    websocket.onerror = function(evt) {};
+</script>
+</html>

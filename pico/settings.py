@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,18 +26,21 @@ SECRET_KEY = 'django-insecure-%&w3i)1r5k6eqv+4k@+m8b3%&oy)zf6um^g&8a9_6g^tphiubn
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'chat.apps.ChatConfig',
 ]
 
 MIDDLEWARE = [
@@ -49,12 +53,13 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+X_FRAME_OPTIONS = "SAMEORIGIN"
 ROOT_URLCONF = 'pico.urls'
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': os.path.join(BASE_DIR, "templates"),
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -67,17 +72,32 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'pico.wsgi.application'
+ASGI_APPLICATION = 'pico.asgi.application'
 
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    "default": { # postgresql
+        "ENGINE": os.environ.get("DEFAULT_ENGINE", "django.db.backends.sqlite3"),
+        "NAME": os.environ.get(
+            "DEFAULT_DATABASE", os.path.join(BASE_DIR, "db.sqlite3")
+        ),
+        "USER": os.environ.get("DEFAULT_USER"),
+        "PASSWORD": os.environ.get("DEFAULT_PASSWORD"),
+        "HOST": os.environ.get("DEFAULT_HOST", "localhost"),
+        "PORT": os.environ.get("DEFAULT_PORT", "5432"),
+    },
+}
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],
+        },
+    },
 }
 
 
@@ -116,8 +136,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+REDIS_HOST=os.environ.get("REDIS_HOST", "localhost")
+REDIS_PORT=int(os.environ.get("REDIS_PORT", "6379"))
+REDIS_DB=int(os.environ.get("REDIS_DB", "0"))

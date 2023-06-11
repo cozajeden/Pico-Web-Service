@@ -1,0 +1,42 @@
+version: '3.7'
+
+services:
+  redis:
+    image: redis:latest
+    container_name: pico_redis
+    restart: always
+    ports:
+      - 6379:6379
+
+  pico-db:
+    image: postgres:latest
+    container_name: pico_db
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    user:
+      0:0
+
+  pico-web:
+    build: .
+    container_name: pico_web
+    restart: always
+    command: bash -c "python manage.py migrate &&
+                      daphne -b 0.0.0.0 -p 80 pico.asgi:application"
+    depends_on:
+      - pico-db
+      - redis
+    ports:
+      - "80:80/tcp"
+      - "8888:8888/udp"
+      - "5555:5555/udp"
+    volumes:
+      - .:/app
+    env_file:
+      - ./.env.dev
